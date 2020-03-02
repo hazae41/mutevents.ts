@@ -1,4 +1,4 @@
-# deno-events
+# mutevents
 
 ![events graph](https://i.imgur.com/Se9fNFI.png?1)
 
