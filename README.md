@@ -1,6 +1,7 @@
 # mutevents
 
 ![events graph](https://i.imgur.com/Se9fNFI.png?1)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fhazae41%2Fdeno-events.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fhazae41%2Fdeno-events?ref=badge_shield)
 
 Events allows multiple listeners (A, B, C) to be executed when objects (O, S) trigger them; without ever knowing their existence at compile time.
 
@@ -137,3 +138,7 @@ You can retrieve modification on the emitter side
 	const result = player.emit("move", x, y, z);
 	if(result === "cancelled") return; // optional
 	[x, y, z] = result;
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fhazae41%2Fdeno-events.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fhazae41%2Fdeno-events?ref=badge_large)
+=======
