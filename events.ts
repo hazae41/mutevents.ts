@@ -14,29 +14,39 @@ export class EventEmitter<T> {
     normals = new Map<T, Set<Listener>>();
     lows = new Map<T, Set<Listener>>();
 
-    listeners(p: Priority): Map<T, Set<Listener>> {
+    listeners(p: Priority): Map<T, Set<Listener>> | undefined {
         if(p === "high") return this.highs;
         if(p === "normal") return this.normals;
         if(p === "low") return this.lows;
+        return undefined;
     }
 
     on([type, p = "normal"]: [T, Priority?], listener: Listener){
         const listeners = this.listeners(p)
-        if(!listeners.has(type)) listeners.set(type, new Set())
-        listeners.get(type).add(listener);
+        if(!listeners) return;
+        const set = listeners.get(type) ?? new Set();
+        if(!set.size) listeners.set(type, set)
+        set.add(listener);
     }
 
     off([type, p = "normal"]: [T, Priority?], listener: Listener){
-        const listeners = this.listeners(p)
-        if(!listeners.has(type)) return;
-        listeners.get(type).delete(listener);
+        const listeners = this.listeners(p);
+        if(!listeners) return;
+        const set = listeners.get(type);
+        if(set) set.delete(listener);
     }
 
-    emit(type: T, ...args): EventResult {
-        const highs = this.highs.get(type) || [];
-        const normals = this.normals.get(type) || [];
-        const lows = this.lows.get(type) || [];
-        const all = [...highs, ...normals, ...lows];
+    emit(type: T, ...args: any[]): EventResult {
+        const all = [];
+
+        const highs = this.highs.get(type);
+        if(highs) all.push(...Array.from(highs));
+
+        const normals = this.normals.get(type);
+        if(normals) all.push(...Array.from(normals));
+
+        const lows = this.lows.get(type);
+        if(lows) all.push(...Array.from(lows));
         
         let values = args;
 

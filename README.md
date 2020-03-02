@@ -1,4 +1,4 @@
-# deno-events
+# mutevents
 
 ![events graph](https://i.imgur.com/Se9fNFI.png?1)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fhazae41%2Fdeno-events.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fhazae41%2Fdeno-events?ref=badge_shield)
@@ -141,3 +141,4 @@ You can retrieve modification on the emitter side
 
 ## License
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fhazae41%2Fdeno-events.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fhazae41%2Fdeno-events?ref=badge_large)
+=======
