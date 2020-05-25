@@ -11,9 +11,9 @@ Events allows multiple listeners (A, B, C) to be executed when objects (O, S) tr
 The syntax is (almost) the same as nodejs EventEmitter.
 
 ```typescript
-emitter.emit(event: string, ...args: any[]): EventResult
-emitter.on([event: string, priority: string], listener: (...args: any[]) => ListenerResult): void
-emitter.off(...) same as on()
+emitter.emit(event: string, ...args: any[])
+emitter.on([event: string, priority: string], listener: (...args: any[]) => EventResult): void
+emitter.off(...) // same as on()
 ```
 
 There is no once() function since events can be cancelled. You have to stick with on() and off() when you want to remove the listener.
