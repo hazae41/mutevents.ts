@@ -11,7 +11,7 @@ Events allows multiple listeners (A, B, C) to be executed when objects (O, S) tr
 The syntax is (almost) the same as nodejs EventEmitter.
 
 ```typescript
-emitter.emit(event: string, ...args: any[])
+emitter.emit(event: string, ...args: any[]): Promise<"cancelled" | any[]>
 emitter.on([event: string, priority: string], listener: (...args: any[]) => EventResult): void
 emitter.off(...) // same as on()
 ```
