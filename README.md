@@ -1,20 +1,34 @@
-# mutevents
+# Mutevents
 
 ![events graph](https://i.imgur.com/Se9fNFI.png?1)
 
 Events allows multiple listeners (A, B, C) to be executed when objects (O, S) trigger them; without ever knowing their existence at compile time.
 
-## Syntax
+## Usage
 
-The syntax is (almost) the same as nodejs EventEmitter.
+    deno cache -r https://deno.land/x/mutevents/mod.ts
 
 ```typescript
-emitter.emit(event: string, ...args: any[]): Promise<"cancelled" | any[]>
-emitter.on([event: string, priority: string], listener: (...args: any[]) => EventResult): void
-emitter.off(...) // same as on()
+import { EventEmitter } from "https://deno.land/x/mutevents/mod.ts";
+
+class Animal extends EventEmitter<"death"> { 
+	// ...
+}
+
+const animal = new Animal()
+animal.on(["death"], () => console.log("dead"))
+animal.emit("death")
 ```
 
-There is no once() function since events can be cancelled. You have to stick with on() and off() when you want to remove the listener.
+## Syntax
+
+```typescript
+emitter.emit(event, ...args: any[]): Promise<any[]>
+emitter.on([event, priority], listener: EventListener): void
+emitter.off([event, priority], listener: EventListener): void
+emitter.once([event, priority], listener: EventListener): EventListener
+await emitter.wait([event, priority]): any[]
+```
 
 ## Types
 
@@ -25,7 +39,7 @@ Types are useful with TypeScript autocompletion and compiler warnings. Plus, the
 We define a generic type Animal with a "death" event type
 
 ```typescript
-class Animal<T> extends EventEmitter<T | "death"> {
+class Animal<E = never> extends EventEmitter<"death" | E> {
 	// ...	
 }
 ```
@@ -43,47 +57,27 @@ Dog can now emit two event types: "woof" and "death"
 ### Attribute way
 
 We define an interface Animal with an events attribute.
-OpenEventEmitter is like a regular emitter but we can override its event types.
-Animal can emit "death" event type.
 	
 ```typescript
-interface Animal {
-	events: OpenEventEmitter<"death">
+interface Animal<E = never> {
+	events: new EventEmitter<"death" | E>()
 }
 ```
 
 Then we define a type Duck that overrides Animal's events attribute type to inject a new "quack" event type.
 
 ```typescript
-interface Duck extends Animal {
-	events: OpenEventEmitter<"quack" | "death">
-}
+interface Duck extends Animal<"quack"> {}
 ```
 
 Duck can now emit both "quack" and "death".
 
-Note we could completely remove the "death" event from Duck
-
-```typescript
-interface GodDuck extends Animal {
-	events: OpenEventEmitter<"quack">
-}
-```
-
-Implementation
-
-```typescript
-class Quacky implements Duck {
-	events = emitter<"quack" | "death">() // OpenEventEmitter<"quack" | "death">
-}
-```
-
 ## Priorities
 
 An event listener can have a priority:
-- "high" means it will be handled first
+- "before" means it will be handled first
 - "normal" means normal
-- "low" means it will be handled last
+- "after" means it will be handled last
 
 The priority must be defined in the array after the event name. If no priority is defined, "normal" will be used.
 
@@ -91,8 +85,8 @@ Example
 
 ```typescript
 dog.on(["woof"], () => console.log("Normal"));
-dog.on(["woof", "low"], () => console.log("Last"));
-dog.on(["woof", "high"], () => console.log("First"));
+dog.on(["woof", "after"], () => console.log("Last"));
+dog.on(["woof", "before"], () => console.log("First"));
 ```
 
 The "low" listener will be executed after the "normal" one, which will be executed after the "high" one.
@@ -100,17 +94,17 @@ The "low" listener will be executed after the "normal" one, which will be execut
 When multiple listeners are on the same priority, the first defined will be the first executed.
 
 ```typescript
-dog.on(["woof", "high"], () => console.log("First"));
-dog.on(["woof", "high"], () => console.log("Last"));
+dog.on(["woof", "before"], () => console.log("First"));
+dog.on(["woof", "before"], () => console.log("Last"));
 ```
 
 ## Cancellation
 
-Any event can be cancelled by any listener. The listener needs to explicitly return a "cancelled" string.
-The next listener will not be executed, and the emit() result will be "cancelled".
+Any event can be cancelled by any listener. The listener needs to explicitly throw a "cancelled" string.
+The next listener will not be executed, and the emit() will throw "cancelled".
 
 ```typescript
-dog.on(["woof", "high"], () => "cancelled");
+dog.on(["woof", "before"], () => "cancelled");
 dog.on(["woof"], () => console.log("This won't be displayed"));
 ```
 
@@ -126,8 +120,13 @@ dog.on(["woof"], () => {
 You can check for cancellation on the emitter side
 
 ```typescript
-const result = dog.emit("woof");
-if(result === "cancelled") return;
+try {
+	await dog.emit("woof");
+} catch(e){
+	if(e !== "cancelled") throw e;
+	console.log("cancelled")
+}
+
 ```
 
 ## Mutability
@@ -139,7 +138,7 @@ player.on(["command"], (cmd: string) => {
 	if(cmd === "man") return ["tldr"];
 })
 
-player.on(["command"], (cmd: string) => {
+player.on(["command", "after"], (cmd: string) => {
 	// cmd is now "tldr"
 })
 ```
@@ -163,7 +162,5 @@ let x = 1;
 let y = 2;
 let z = 3;
 
-const result = player.emit("move", x, y, z);
-if(result === "cancelled") return; // optional
-[x, y, z] = result;
+[x, y, z] = player.emit("move", x, y, z);
 ```

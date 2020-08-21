@@ -1,15 +1,8 @@
-export type EventPriority = "high" | "normal" | "low";
+type Awaitable<T> = Promise<T> | T;
 
-export type EventResult = "cancelled" | any[] | void;
-export type AsyncEventResult = Promise<EventResult>;
-
-export type EventListener = (...args: any[]) => EventResult | AsyncEventResult;
-
-export type OpenEventEmitter<T> = EventEmitter<T> | EventEmitter<any>;
-
-export function emitter<T>(): OpenEventEmitter<T> {
-  return new EventEmitter<T>();
-}
+export type EventResult = any[] | "cancelled" | void;
+export type EventListener = (...args: any[]) => Awaitable<EventResult>;
+export type EventPriority = "before" | "normal" | "after";
 
 function merge(a: any[], b: any[]): any[] {
   const c = [...a];
@@ -20,52 +13,68 @@ function merge(a: any[], b: any[]): any[] {
 }
 
 export class EventEmitter<T> {
-  highs = new Map<T, Set<EventListener>>();
-  normals = new Map<T, Set<EventListener>>();
-  lows = new Map<T, Set<EventListener>>();
-
-  listeners(p: EventPriority): Map<T, Set<EventListener>> | undefined {
-    if (p === "high") return this.highs;
-    if (p === "normal") return this.normals;
-    if (p === "low") return this.lows;
+  listeners = {
+    before: new Map<T, Set<EventListener>>(),
+    normal: new Map<T, Set<EventListener>>(),
+    after: new Map<T, Set<EventListener>>(),
   }
 
   on([type, p = "normal"]: [T, EventPriority?], listener: EventListener) {
-    const listeners = this.listeners(p);
+    const listeners = this.listeners[p]
     if (!listeners) return;
-    const set = listeners.get(type) ?? new Set();
-    if (!set.size) listeners.set(type, set);
+
+    let set = listeners.get(type);
+
+    if (!set) {
+      set = new Set<EventListener>()
+      listeners.set(type, set)
+    }
+
     set.add(listener);
   }
 
   off([type, p = "normal"]: [T, EventPriority?], listener: EventListener) {
-    const listeners = this.listeners(p);
+    const listeners = this.listeners[p];
     if (!listeners) return;
+
     const set = listeners.get(type);
     if (set) set.delete(listener);
   }
 
-  async emit(type: T, ...args: any[]): Promise<"cancelled" | any[]> {
-    const all = [];
-
-    const highs = this.highs.get(type);
-    if (highs) all.push(...Array.from(highs));
-
-    const normals = this.normals.get(type);
-    if (normals) all.push(...Array.from(normals));
-
-    const lows = this.lows.get(type);
-    if (lows) all.push(...Array.from(lows));
-
-    let values = args;
-
-    for (const listener of all) {
-      const result = await listener(...values);
-      if (result === "cancelled") return result;
-      if (!Array.isArray(result)) continue;
-      values = merge(values, result);
+  once([type, p = "normal"]: [T, EventPriority?], listener: EventListener): EventListener {
+    const slistener = (...args: any[]) => {
+      this.off([type, p], slistener)
+      listener(...args)
     }
 
-    return values;
+    this.on([type, p], slistener)
+    return slistener
+  }
+
+  async wait([type, p = "normal"]: [T, EventPriority?]): Promise<any> {
+    return new Promise(resolve => this.once([type, p], resolve))
+  }
+
+  async emit(type: T, ...args: any[]): Promise<any[] | never> {
+    const all = new Array<EventListener>();
+    const listeners = this.listeners
+
+    const befores = listeners.before.get(type);
+    if (befores) all.push(...befores);
+
+    const normals = listeners.normal.get(type);
+    if (normals) all.push(...normals);
+
+    const afters = listeners.after.get(type);
+    if (afters) all.push(...afters);
+
+    for (const listener of all) {
+      const result = await listener(...args);
+      if (result === "cancelled") throw result;
+      if (!Array.isArray(result)) continue;
+      args = merge(args, result);
+    }
+
+    return args;
   }
 }
