@@ -51,8 +51,11 @@ export class EventEmitter<T> {
     return slistener
   }
 
-  async wait([type, p = "normal"]: [T, EventPriority?]): Promise<any> {
-    return new Promise(resolve => this.once([type, p], resolve))
+  async wait([type, p = "normal"]: [T, EventPriority?]): Promise<any[]> {
+    return new Promise(resolve => {
+      const listener = (...args: any[]) => resolve(args)
+      this.once([type, p], listener)
+    })
   }
 
   async emit(type: T, ...args: any[]): Promise<any[] | never> {
