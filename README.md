@@ -56,18 +56,18 @@ Dog can now emit two event types: "woof" and "death"
 
 ### Attribute way
 
-We define an interface Animal with an events attribute.
+We define an Animal class with an events attribute.
 	
 ```typescript
-interface Animal<E = never> {
-	events: new EventEmitter<"death" | E>()
+class Animal<E = never> {
+	events = new EventEmitter<"death" | E>()
 }
 ```
 
 Then we define a type Duck that overrides Animal's events attribute type to inject a new "quack" event type.
 
 ```typescript
-interface Duck extends Animal<"quack"> {}
+class Duck extends Animal<"quack"> {}
 ```
 
 Duck can now emit both "quack" and "death".
