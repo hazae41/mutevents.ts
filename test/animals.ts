@@ -1,11 +1,14 @@
-import { EventEmitter } from "../mod";
-// import { EventEmitter } from "../mod.ts";
+import { EventEmitter } from "../mod.ts";
 
-class Animal<E = never> extends EventEmitter<E | "death"> {
+class Animal<E = never> extends EventEmitter<E & {
+    death: []
+}> {
     // ...
 }
 
-class Dog extends Animal<"woof"> { }
+class Dog extends Animal<{
+    woof: [string]
+}> { }
 class Duck extends Animal<"quack"> { }
 class Cat extends Animal<"meow"> { }
 class Lizard extends Animal { }
@@ -39,7 +42,7 @@ export async function test() {
 
     // Canceller
     dog.on(["woof"], (msg: string) => {
-        return "cancelled";
+        throw Error("cancelled")
     })
 
     // Before-observer

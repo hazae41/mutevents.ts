@@ -1,11 +1,13 @@
-import { EventEmitter } from "../mod";
+import { EventEmitter } from "../mod.ts";
 
 class EventHolder<E = never> {
     events = new EventEmitter<E>()
 }
 
 class None extends EventHolder { }
-class Test extends EventHolder<"test"> { }
+class Test extends EventHolder<{
+    test: []
+}> { }
 
 export async function test() {
     const none = new None()
@@ -15,5 +17,4 @@ export async function test() {
     const test = new Test()
     // Should autocomplete to "test"
     // test.events.emit("")
-
 }

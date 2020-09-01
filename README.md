@@ -11,7 +11,9 @@ Events allows multiple listeners (A, B, C) to be executed when objects (O, S) tr
 ```typescript
 import { EventEmitter } from "https://deno.land/x/mutevents/mod.ts";
 
-class Animal extends EventEmitter<"death"> { 
+class Animal extends EventEmitter<{
+	death: [] // No args
+}> { 
 	// ...
 }
 
@@ -39,7 +41,9 @@ Types are useful with TypeScript autocompletion and compiler warnings. Plus, the
 We define a generic type Animal with a "death" event type
 
 ```typescript
-class Animal<E = never> extends EventEmitter<"death" | E> {
+class Animal<E = never> extends EventEmitter<E & {
+	death: []
+}> {
 	// ...	
 }
 ```
@@ -47,7 +51,9 @@ class Animal<E = never> extends EventEmitter<"death" | E> {
 Then we define a type Dog that extends Animal with a "woof" event type.
 
 ```typescript
-class Dog extends Animal<"woof"> {
+class Dog extends Animal<{
+	woof: [string]
+}> {
 	// ...
 }
 ```
@@ -60,14 +66,14 @@ We define an interface Animal with an events attribute.
 	
 ```typescript
 interface Animal<E = never> {
-	events: new EventEmitter<"death" | E>()
+	events: new EventEmitter<E & { death: [] }>()
 }
 ```
 
 Then we define a type Duck that overrides Animal's events attribute type to inject a new "quack" event type.
 
 ```typescript
-interface Duck extends Animal<"quack"> {}
+interface Duck extends Animal<{ quack: [] }> {}
 ```
 
 Duck can now emit both "quack" and "death".
@@ -100,11 +106,11 @@ dog.on(["woof", "before"], () => console.log("Last"));
 
 ## Cancellation
 
-Any event can be cancelled by any listener. The listener needs to explicitly throw a "cancelled" string.
-The next listener will not be executed, and the emit() will throw "cancelled".
+Any event can be cancelled by any listener. The listener needs to throw something.
+The next listener will not be executed, and the emit() will also throw.
 
 ```typescript
-dog.on(["woof", "before"], () => "cancelled");
+dog.on(["woof", "before"], () => { throw Error("cancelled") });
 dog.on(["woof"], () => console.log("This won't be displayed"));
 ```
 
@@ -112,7 +118,7 @@ Block form
 
 ```typescript
 dog.on(["woof"], () => {
-	if(dog.name !== "Rex") return "cancelled";
+	if(dog.name !== "Rex") throw Error("cancelled");
 	console.log("Rex: woof");
 });
 ```
@@ -123,7 +129,7 @@ You can check for cancellation on the emitter side
 try {
 	await dog.emit("woof");
 } catch(e){
-	if(e !== "cancelled") throw e;
+	if(e.message !== "cancelled") throw e;
 	console.log("cancelled")
 }
 
@@ -162,5 +168,5 @@ let x = 1;
 let y = 2;
 let z = 3;
 
-[x, y, z] = player.emit("move", x, y, z);
+[x, y, z] = await player.emit("move", x, y, z);
 ```

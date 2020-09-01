@@ -1,83 +1,76 @@
-type Awaitable<T> = Promise<T> | T;
+type Awaitable<T> = T | Promise<T>
 
-export type EventResult = any[] | "cancelled" | void;
-export type EventListener = (...args: any[]) => Awaitable<EventResult>;
-export type EventPriority = "before" | "normal" | "after";
+export type EventListener<V extends any[]> =
+  (...x: V) => Awaitable<V | void>
 
-function merge(a: any[], b: any[]): any[] {
-  const c = [...a];
-  for (const [i, x] of b.entries()) {
-    c[i] = x;
-  }
-  return c;
+export type EventPriority =
+  "before" | "normal" | "after";
+
+export type EventListeners<T> = {
+  [K in keyof T]?: EventListener<T[K] & any[]>[]
 }
 
-export class EventEmitter<T> {
-  listeners = {
-    before: new Map<T, Set<EventListener>>(),
-    normal: new Map<T, Set<EventListener>>(),
-    after: new Map<T, Set<EventListener>>(),
-  }
-
-  on([type, p = "normal"]: [T, EventPriority?], listener: EventListener) {
-    const listeners = this.listeners[p]
-    if (!listeners) return;
-
-    let set = listeners.get(type);
-
-    if (!set) {
-      set = new Set<EventListener>()
-      listeners.set(type, set)
+export class EventEmitter<T extends {}> {
+  _listeners: {
+    [P in EventPriority]: EventListeners<T>
+  } = {
+      "before": {},
+      "normal": {},
+      "after": {}
     }
 
-    set.add(listener);
+  private _listenersOf<K extends keyof T>(
+    type: K, priority: EventPriority = "normal"
+  ) {
+    const { _listeners } = this;
+    let listeners = _listeners[priority][type]
+    if (!listeners) listeners = _listeners[priority][type] = []
+    return listeners!!;
   }
 
-  off([type, p = "normal"]: [T, EventPriority?], listener: EventListener) {
-    const listeners = this.listeners[p];
-    if (!listeners) return;
-
-    const set = listeners.get(type);
-    if (set) set.delete(listener);
+  on<K extends keyof T>(
+    [type, priority = "normal"]: [K, EventPriority?],
+    listener: EventListener<T[K] & any[]>
+  ) {
+    this._listenersOf(type, priority).push(listener)
+    return () => this.off([type, priority], listener)
   }
 
-  once([type, p = "normal"]: [T, EventPriority?], listener: EventListener): EventListener {
-    const slistener = (...args: any[]) => {
-      this.off([type, p], slistener)
-      listener(...args)
-    }
-
-    this.on([type, p], slistener)
-    return slistener
+  off<K extends keyof T>(
+    [type, priority = "normal"]: [K, EventPriority?],
+    listener: EventListener<T[K] & any[]>
+  ) {
+    const { _listeners } = this;
+    _listeners[priority][type] = _listeners[priority][type]!!
+      .filter(it => it !== listener)
+    return () => this.on([type, priority], listener)
   }
 
-  async wait([type, p = "normal"]: [T, EventPriority?]): Promise<any[]> {
-    return new Promise(resolve => {
-      const listener = (...args: any[]) => resolve(args)
-      this.once([type, p], listener)
+  once<K extends keyof T>(
+    [type, priority = "normal"]: [K, EventPriority?],
+    listener: EventListener<T[K] & any[]>
+  ) {
+    const off = this.on([type, priority], (...data) => {
+      off();
+      return listener(...(data as any))
     })
+
+    return off
   }
 
-  async emit(type: T, ...args: any[]): Promise<any[] | never> {
-    const all = new Array<EventListener>();
-    const listeners = this.listeners
-
-    const befores = listeners.before.get(type);
-    if (befores) all.push(...befores);
-
-    const normals = listeners.normal.get(type);
-    if (normals) all.push(...normals);
-
-    const afters = listeners.after.get(type);
-    if (afters) all.push(...afters);
+  async emit<K extends keyof T>(type: K, ...data: T[K] & any[]) {
+    const all = [
+      ...this._listenersOf(type, "before"),
+      ...this._listenersOf(type, "normal"),
+      ...this._listenersOf(type, "after")
+    ]
 
     for (const listener of all) {
-      const result = await listener(...args);
-      if (result === "cancelled") throw result;
-      if (!Array.isArray(result)) continue;
-      args = merge(args, result);
+      const result = await listener(...(data as any))
+      if (Array.isArray(result)) data = result
     }
 
-    return args;
+    return data;
   }
+
 }

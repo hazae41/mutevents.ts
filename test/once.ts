@@ -1,18 +1,29 @@
-import { EventEmitter } from "../mod";
+import { EventEmitter } from "../mod.ts";
 
-const test = new EventEmitter<"test">()
+class Dog extends EventEmitter<{
+  "woof": [string]
+  "death": []
+}> { }
 
-async function emitter() {
-    await test.emit("test", "it works!")
+const dog = new Dog()
+listener(dog)
+emitter(dog)
+
+async function emitter(dog: Dog) {
+  // await dog.emit("death", [])
+  await new Promise(r => setTimeout(r, 1000))
+  const result = await dog.emit("woof", "Woof!")
 }
 
-async function receiver() {
-    const [data] = await test.wait(["test"])
-    console.log(data)
+async function listener(dog: Dog) {
+  // Listener-based
+  dog.on(["woof"], () => ["Modified!"])
 
-    // Should display "test" mapped to an empty set
-    console.log(test.listeners.normal)
+  // Promise-based
+  const line = await new Promise<string>((r, s) => {
+    dog.once(["woof"], (line) => r(line))
+    dog.once(["death"], () => s("Dead!"))
+  })
+
+  console.log(line)
 }
-
-receiver()
-emitter()
