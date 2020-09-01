@@ -62,7 +62,7 @@ Dog can now emit two event types: "woof" and "death"
 
 ### Attribute way
 
-We define an interface Animal with an events attribute.
+We define an Animal class with an events attribute.
 	
 ```typescript
 interface Animal<E = never> {
