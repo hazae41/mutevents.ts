@@ -12,21 +12,20 @@ Events allows multiple listeners (A, B, C) to be executed when objects (O, S) tr
 import { EventEmitter } from "https://deno.land/x/mutevents/mod.ts";
 
 interface AnimalEvents {
-  death: []
+  death: [string]
 }
 
 class Animal extends EventEmitter<AnimalEvents> { 
   async die(){
-    const cancelled = await this.emit("death")
-    if (cancelled) throw cancelled;
+    return await this.emit("death", "I'm dead!")
   }
 }
 
 const animal = new Animal()
 
-animal.on(["death"], () => console.log("Dead!"))
+animal.on(["death"], (text) => console.log(text))
 
-const cancelled = await animal.emit("death")
+const cancelled = await animal.die()
 if(cancelled) console.error(cancelled)
 ```
 
