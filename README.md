@@ -11,25 +11,32 @@ Events allows multiple listeners (A, B, C) to be executed when objects (O, S) tr
 ```typescript
 import { EventEmitter } from "https://deno.land/x/mutevents/mod.ts";
 
-class Animal extends EventEmitter<{
-	death: [] // No args
-}> { 
-	// ...
+interface AnimalEvents {
+	death: []
+}
+
+class Animal extends EventEmitter<AnimalEvents> { 
+	async die(){
+		const cancelled = await this.emit("death")
+		if (cancelled) throw cancelled;
+	}
 }
 
 const animal = new Animal()
-animal.on(["death"], () => console.log("dead"))
-animal.emit("death")
+
+animal.on(["death"], () => console.log("Dead!"))
+
+const cancelled = await animal.emit("death")
+if(cancelled) console.error(cancelled)
 ```
 
 ## Syntax
 
 ```typescript
-emitter.emit(event, ...args: any[]): Promise<any[]>
+emitter.emit(event, ...args: any[]): Promise<Cancelled | undefined>
 emitter.on([event, priority], listener: EventListener): void
 emitter.off([event, priority], listener: EventListener): void
 emitter.once([event, priority], listener: EventListener): EventListener
-await emitter.wait([event, priority]): any[]
 ```
 
 ## Types
@@ -41,9 +48,11 @@ Types are useful with TypeScript autocompletion and compiler warnings. Plus, the
 We define a generic type Animal with a "death" event type
 
 ```typescript
-class Animal<E = never> extends EventEmitter<E & {
+interface AnimalEvents {
 	death: []
-}> {
+}
+
+class Animal<E extends AnimalEvents = AnimalEvents> extends EventEmitter<E> {
 	// ...	
 }
 ```
@@ -51,9 +60,11 @@ class Animal<E = never> extends EventEmitter<E & {
 Then we define a type Dog that extends Animal with a "woof" event type.
 
 ```typescript
-class Dog extends Animal<{
+interface DogEvents extends AnimalEvents {
 	woof: [string]
-}> {
+}
+
+class Dog extends Animal<DogEvents> {
 	// ...
 }
 ```
@@ -65,15 +76,26 @@ Dog can now emit two event types: "woof" and "death"
 We define an Animal class with an events attribute.
 	
 ```typescript
-interface Animal<E = never> {
-	events: new EventEmitter<E & { death: [] }>()
+interface AnimalEvents {
+	death: []
+}
+
+class Animal<E extends AnimalEvents = AnimalEvents> {
+	events: new EventEmitter<E>()
+	// ...
 }
 ```
 
 Then we define a type Duck that overrides Animal's events attribute type to inject a new "quack" event type.
 
 ```typescript
-interface Duck extends Animal<{ quack: [] }> {}
+interface DuckEvents extends AnimalEvents { 
+	quack: [] 
+}
+
+class Duck extends Animal<DuckEvents> {
+	// ...
+}
 ```
 
 Duck can now emit both "quack" and "death".
@@ -126,7 +148,7 @@ You can check for cancellation on the emitter side
 
 ```typescript
 const cancelled = await dog.emit("woof");
-if (cancelled) console.log("cancelled")
+if (cancelled) console.error("cancelled")
 ```
 
 Or rethrow it
