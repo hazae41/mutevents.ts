@@ -12,14 +12,14 @@ Events allows multiple listeners (A, B, C) to be executed when objects (O, S) tr
 import { EventEmitter } from "https://deno.land/x/mutevents/mod.ts";
 
 interface AnimalEvents {
-	death: []
+  death: []
 }
 
 class Animal extends EventEmitter<AnimalEvents> { 
-	async die(){
-		const cancelled = await this.emit("death")
-		if (cancelled) throw cancelled;
-	}
+  async die(){
+    const cancelled = await this.emit("death")
+    if (cancelled) throw cancelled;
+  }
 }
 
 const animal = new Animal()
@@ -49,11 +49,11 @@ We define a generic type Animal with a "death" event type
 
 ```typescript
 interface AnimalEvents {
-	death: []
+  death: []
 }
 
 class Animal<E extends AnimalEvents = AnimalEvents> extends EventEmitter<E> {
-	// ...	
+  // ...	
 }
 ```
 
@@ -61,11 +61,11 @@ Then we define a type Dog that extends Animal with a "woof" event type.
 
 ```typescript
 interface DogEvents extends AnimalEvents {
-	woof: [string]
+  woof: [string]
 }
 
 class Dog extends Animal<DogEvents> {
-	// ...
+  // ...
 }
 ```
 
@@ -74,15 +74,15 @@ Dog can now emit two event types: "woof" and "death"
 ### Attribute way
 
 We define an Animal class with an events attribute.
-	
+  
 ```typescript
 interface AnimalEvents {
-	death: []
+  death: []
 }
 
 class Animal<E extends AnimalEvents = AnimalEvents> {
-	events: new EventEmitter<E>()
-	// ...
+  events: new EventEmitter<E>()
+  // ...
 }
 ```
 
@@ -90,11 +90,11 @@ Then we define a type Duck that overrides Animal's events attribute type to inje
 
 ```typescript
 interface DuckEvents extends AnimalEvents { 
-	quack: [] 
+  quack: [] 
 }
 
 class Duck extends Animal<DuckEvents> {
-	// ...
+  // ...
 }
 ```
 
@@ -133,14 +133,14 @@ The next listener will not be executed, and the emit() will also throw.
 
 ```typescript
 dog.on(["woof"], () => {
-	if(dog.name !== "Rex") 
-		throw new Cancelled();
+  if(dog.name !== "Rex") 
+    throw new Cancelled();
 
-	console.log("Rex: woof");
+  console.log("Rex: woof");
 });
 
 dog.on(["woof"], () => {
-	console.log("This won't be displayed")
+  console.log("This won't be displayed")
 });
 ```
 
