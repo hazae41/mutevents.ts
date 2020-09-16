@@ -1,13 +1,20 @@
 type Awaitable<T> = T | Promise<T>
 
 export type EventListener<V extends any[]> =
-  (...x: V) => Awaitable<V | void>
+  (...x: V) => Awaitable<unknown>
 
 export type EventPriority =
   "before" | "normal" | "after";
 
 export type EventListeners<T> = {
   [K in keyof T]?: EventListener<T[K] & any[]>[]
+}
+
+export class Cancelled extends Error {
+  constructor() {
+    super("Event cancelled")
+    this.name = "Cancelled"
+  }
 }
 
 export class EventEmitter<T extends {}> {
@@ -41,8 +48,12 @@ export class EventEmitter<T extends {}> {
     listener: EventListener<T[K] & any[]>
   ) {
     const { _listeners } = this;
-    _listeners[priority][type] = _listeners[priority][type]!!
+
+    const listeners = _listeners[priority]
+
+    listeners[type] = listeners[type]!!
       .filter(it => it !== listener)
+
     return () => this.on([type, priority], listener)
   }
 
@@ -52,25 +63,28 @@ export class EventEmitter<T extends {}> {
   ) {
     const off = this.on([type, priority], (...data) => {
       off();
-      return listener(...(data as any))
+      return listener(...data)
     })
 
     return off
   }
 
   async emit<K extends keyof T>(type: K, ...data: T[K] & any[]) {
-    const all = [
-      ...this._listenersOf(type, "before"),
-      ...this._listenersOf(type, "normal"),
-      ...this._listenersOf(type, "after")
-    ]
+    try {
+      const all = [
+        ...this._listenersOf(type, "before"),
+        ...this._listenersOf(type, "normal"),
+        ...this._listenersOf(type, "after")
+      ]
 
-    for (const listener of all) {
-      const result = await listener(...(data as any))
-      if (Array.isArray(result)) data = result
+      for (const listener of all)
+        await listener(...data)
+    } catch (e: unknown) {
+      if (e instanceof Cancelled)
+        return e
+
+      throw e
     }
-
-    return data;
   }
 
 }

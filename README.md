@@ -110,63 +110,28 @@ Any event can be cancelled by any listener. The listener needs to throw somethin
 The next listener will not be executed, and the emit() will also throw.
 
 ```typescript
-dog.on(["woof", "before"], () => { throw Error("cancelled") });
-dog.on(["woof"], () => console.log("This won't be displayed"));
-```
-
-Block form
-
-```typescript
 dog.on(["woof"], () => {
-	if(dog.name !== "Rex") throw Error("cancelled");
+	if(dog.name !== "Rex") 
+		throw new Cancelled();
+
 	console.log("Rex: woof");
+});
+
+dog.on(["woof"], () => {
+	console.log("This won't be displayed")
 });
 ```
 
 You can check for cancellation on the emitter side
 
 ```typescript
-try {
-	await dog.emit("woof");
-} catch(e){
-	if(e.message !== "cancelled") throw e;
-	console.log("cancelled")
-}
-
+const cancelled = await dog.emit("woof");
+if (cancelled) console.log("cancelled")
 ```
 
-## Mutability
-
-Any event is mutable by any listener. If a listener returns an array, the next listener will be passed this array.
+Or rethrow it
 
 ```typescript
-player.on(["command"], (cmd: string) => {
-	if(cmd === "man") return ["tldr"];
-})
-
-player.on(["command", "after"], (cmd: string) => {
-	// cmd is now "tldr"
-})
-```
-
-With multiple arguments
-
-```typescript
-player.on(["move"], (x, y, z) => {
-	return [x, 0, z];
-})
-
-player.on(["move"], (x, y, z) => {
-	// y is now 0
-})
-```
-
-You can retrieve modification on the emitter side
-
-```typescript
-let x = 1;
-let y = 2;
-let z = 3;
-
-[x, y, z] = await player.emit("move", x, y, z);
+const cancelled = await dog.emit("woof");
+if (cancelled) throw cancelled;
 ```

@@ -1,29 +1,35 @@
 import { EventEmitter } from "../mod.ts";
 
-class Dog extends EventEmitter<{
-  "woof": [string]
-  "death": []
-}> { }
+interface DogEvents {
+  woof: [string]
+  death: []
+}
+
+class Dog extends EventEmitter<DogEvents> { }
 
 const dog = new Dog()
 listener(dog)
 emitter(dog)
 
 async function emitter(dog: Dog) {
-  // await dog.emit("death", [])
-  await new Promise(r => setTimeout(r, 1000))
-  const result = await dog.emit("woof", "Woof!")
+  // await dog.emit("death")
+  await new Promise((ok) => setTimeout(ok, 1000))
+  await dog.emit("woof", "Woof!")
 }
 
 async function listener(dog: Dog) {
   // Listener-based
-  dog.on(["woof"], () => ["Modified!"])
+  dog.once(["woof"], console.log)
 
   // Promise-based
-  const line = await new Promise<string>((r, s) => {
-    dog.once(["woof"], (line) => r(line))
-    dog.once(["death"], () => s("Dead!"))
-  })
+  try {
+    const line = await new Promise<string>((ok, err) => {
+      dog.once(["woof"], (line) => ok(line))
+      dog.once(["death"], () => err(Error("Dead!")))
+    })
 
-  console.log(line)
+    console.log(line)
+  } catch (e: unknown) {
+    console.error(e)
+  }
 }
