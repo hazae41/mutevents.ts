@@ -32,10 +32,17 @@ if(cancelled) console.error(cancelled)
 ## Syntax
 
 ```typescript
+// Emit an event with the given args, returns a Cancelled object if cancelled
 emitter.emit(event, ...args: any[]): Promise<Cancelled | undefined>
-emitter.on([event, priority], listener: EventListener): void
-emitter.off([event, priority], listener: EventListener): void
-emitter.once([event, priority], listener: EventListener): EventListener
+
+// Add a listener on the given event and priority, returns () => off(...)
+emitter.on([event, priority], listener: EventListener): () => () => ...
+
+// Remove a listener on the given event and priority, returns () => on(...)
+emitter.off([event, priority], listener: EventListener): () => () => ...
+
+// Add a listener that removes itself when exececuter, returns () => off(...)
+emitter.once([event, priority], listener: EventListener): () => () => ...
 ```
 
 ## Types
