@@ -1,30 +1,31 @@
-import { Cancelled, EventEmitter } from "../mod.ts";
+import { Cancelled, EventEmitter } from "../mutevents.ts";
 
+// This file tests inheritance and cancellation
 
 interface AnimalEvents {
-  death: []
+  death: void
 }
 
 class Animal<E extends AnimalEvents = AnimalEvents> extends EventEmitter<E> {
   async die() {
-    return await this.emit("death")
+    return await this.emit("death", undefined)
   }
 }
 
 interface DogEvents extends AnimalEvents {
-  woof: [{ msg: string }]
+  woof: { msg: string }
 }
 
 class Dog extends Animal<DogEvents> { }
 
 interface DuckEvents extends AnimalEvents {
-  quack: [{ msg: string }]
+  quack: { msg: string }
 }
 
 class Duck extends Animal<DuckEvents> { }
 
 interface CatEvents extends AnimalEvents {
-  meow: [{ msg: string }]
+  meow: { msg: string }
 }
 
 class Cat extends Animal<CatEvents> { }
@@ -61,7 +62,7 @@ export async function test() {
   // Canceller
   dog.on(["woof"], (e) => {
     if (e.msg === "Waf!")
-      throw new Cancelled()
+      throw new Cancelled("Cancelled!")
   })
 
   // Before-observer

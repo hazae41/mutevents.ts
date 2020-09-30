@@ -1,12 +1,13 @@
-import { EventEmitter } from "../mod.ts";
+import { EventEmitter } from "../mutevents.ts";
 
 class EventHolder<E = never> {
     events = new EventEmitter<E>()
 }
 
 class None extends EventHolder { }
+
 class Test extends EventHolder<{
-    test: []
+    test: void
 }> { }
 
 export async function test() {
