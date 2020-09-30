@@ -12,31 +12,37 @@ Events allows multiple listeners (A, B, C) to be executed when objects (O, S) tr
 import { EventEmitter } from "https://deno.land/x/mutevents/mod.ts";
 
 interface AnimalEvents {
-  death: []
+  death: [string]
 }
 
 class Animal extends EventEmitter<AnimalEvents> { 
   async die(){
-    const cancelled = await this.emit("death")
-    if (cancelled) throw cancelled;
+    return await this.emit("death", "I'm dead!")
   }
 }
 
 const animal = new Animal()
 
-animal.on(["death"], () => console.log("Dead!"))
+animal.on(["death"], (text) => console.log(text))
 
-const cancelled = await animal.emit("death")
+const cancelled = await animal.die()
 if(cancelled) console.error(cancelled)
 ```
 
 ## Syntax
 
 ```typescript
+// Emit an event with the given args, returns a Cancelled object if cancelled
 emitter.emit(event, ...args: any[]): Promise<Cancelled | undefined>
-emitter.on([event, priority], listener: EventListener): void
-emitter.off([event, priority], listener: EventListener): void
-emitter.once([event, priority], listener: EventListener): EventListener
+
+// Add a listener on the given event and priority, returns () => off(...)
+emitter.on([event, priority], listener: EventListener): () => () => ...
+
+// Remove a listener on the given event and priority, returns () => on(...)
+emitter.off([event, priority], listener: EventListener): () => () => ...
+
+// Add a listener that removes itself when exececuter, returns () => off(...)
+emitter.once([event, priority], listener: EventListener): () => () => ...
 ```
 
 ## Types
