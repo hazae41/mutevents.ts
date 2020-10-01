@@ -1,8 +1,6 @@
 # Mutevents
 
-![events graph](https://i.imgur.com/Se9fNFI.png?1)
-
-Events allows multiple listeners (A, B, C) to be executed when objects (O, S) trigger them; without ever knowing their existence at compile time.
+Typed, async, and promiseable events for Deno.
 
 ## Usage
 
@@ -12,7 +10,7 @@ Events allows multiple listeners (A, B, C) to be executed when objects (O, S) tr
 import { EventEmitter } from "https://deno.land/x/mutevents/mod.ts";
 
 interface AnimalEvents {
-  death: [string]
+  death: string
 }
 
 class Animal extends EventEmitter<AnimalEvents> { 
@@ -33,85 +31,77 @@ if(cancelled) console.error(cancelled)
 
 ```typescript
 // Emit an event with the given args, returns a Cancelled object if cancelled
-emitter.emit(event, ...args: any[]): Promise<Cancelled | undefined>
+emitter.emit(event, data): Promise<Cancelled | undefined>
 
-// Add a listener on the given event and priority, returns () => off(...)
-emitter.on([event, priority], listener: EventListener): () => () => ...
+// Synchronously emit an event with the given args, returns a Cancelled object if (synchronously) cancelled
+emitter.emitSync(event, data): Cancelled | undefined
 
-// Remove a listener on the given event and priority, returns () => on(...)
-emitter.off([event, priority], listener: EventListener): () => () => ...
+// Add a listener on the given event and priority, returns a removal function
+emitter.on([event, priority], listener: EventListener): () => void
 
-// Add a listener that removes itself when exececuter, returns () => off(...)
-emitter.once([event, priority], listener: EventListener): () => () => ...
+// Add a listener that removes itself when executed, returns a removal function
+emitter.once([event, priority], listener: EventListener): () => void
+
+// Abortable promise that resolves (with the result) when the given event type is emitted
+emitter.wait(event, priority): Abortable (Promise)
+
+// Abortable promise that rejects (with the result) when the given event type is emitted
+emitter.error(event, priority): Abortable (Promise)
 ```
 
 ## Types
 
 Types are useful with TypeScript autocompletion and compiler warnings. Plus, they allow you to inherit events from a superclass.
 
-### Class way
-
 We define a generic type Animal with a "death" event type
 
 ```typescript
 interface AnimalEvents {
-  death: []
+  death: void // Argument type (none)
 }
+```
 
+Using inheritance
+
+```typescript
 class Animal<E extends AnimalEvents = AnimalEvents> extends EventEmitter<E> {
-  // ...	
+  async die(){
+    return await this.emit("death", undefined)
+  }
 }
 ```
 
-Then we define a type Dog that extends Animal with a "woof" event type.
+Or a field
 
 ```typescript
-interface DogEvents extends AnimalEvents {
-  woof: [string]
-}
-
-class Dog extends Animal<DogEvents> {
-  // ...
-}
-```
-
-Dog can now emit two event types: "woof" and "death"
-
-### Attribute way
-
-We define an Animal class with an events attribute.
-  
-```typescript
-interface AnimalEvents {
-  death: []
-}
-
 class Animal<E extends AnimalEvents = AnimalEvents> {
   events: new EventEmitter<E>()
   // ...
 }
 ```
 
-Then we define a type Duck that overrides Animal's events attribute type to inject a new "quack" event type.
+Then we define a type Dog that extends Animal with a "woof" event type.
 
 ```typescript
-interface DuckEvents extends AnimalEvents { 
-  quack: [] 
+interface DogEvents extends AnimalEvents /*<- This is important*/ {
+  woof: string // Argument type of the "woof" event
 }
 
-class Duck extends Animal<DuckEvents> {
-  // ...
+class Dog extends Animal<DogEvents> {
+  async woof(text: string){
+    return await this.emit("woof", text)
+  }
 }
 ```
 
-Duck can now emit both "quack" and "death".
+Dog can now emit two event types: "woof" and "death"
 
 ## Priorities
 
 An event listener can have a priority:
-- "before" means it will be handled first
-- "normal" means normal
-- "after" means it will be handled last
+- "before" 
+- "normal"
+- "after"
 
 The priority must be defined in the array after the event name. If no priority is defined, "normal" will be used.
 
@@ -137,12 +127,11 @@ dog.on(["woof", "before"], () => console.log("Last"));
 Any event can be cancelled by any listener. The listener needs to throw something.
 The next listener will not be executed, and the emit() will also throw.
 
+If you want to cancel an event without throwing an error, there is a special Cancelled object with an optional reason field. Such object will not be thrown on the emitter side.
+
 ```typescript
 dog.on(["woof"], () => {
-  if(dog.name !== "Rex") 
-    throw new Cancelled();
-
-  console.log("Rex: woof");
+  throw new Cancelled("...");
 });
 
 dog.on(["woof"], () => {
@@ -163,3 +152,25 @@ Or rethrow it
 const cancelled = await dog.emit("woof");
 if (cancelled) throw cancelled;
 ```
+
+## Promises
+
+See `test/connection.ts` and `test/bingo.ts`
+
+You can wait for an event and resolve/reject when it happens.
+
+Such promises are abortables, so you can race them and abort them when done.
+
+```typescript
+// @test/connection.ts
+// Wait for a message until the connection is closed
+// Removing both listeners when one of them fullfills
+async read() {
+  const message = this.wait("message")
+  const close = this.error("close")
+  return await Abort.race([message, close])
+}
+```
+
+You can also race them with a timeout from https://deno.land/x/timeout
+

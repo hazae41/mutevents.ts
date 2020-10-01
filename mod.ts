@@ -1,3 +1,5 @@
+import { Abort, Abortable } from "https://deno.land/x/abortable/mod.ts"
+
 export type EventPriority =
   "before" | "normal" | "after";
 
@@ -66,43 +68,29 @@ export class EventEmitter<T> {
   }
 
   /**
-   * Promise that resolves (with the result) when the given event type is emitted,
-   * or rejects with a Cancelled when the cleanup function is called
+   * Abortable promise that resolves (with the result) when the given event type is emitted
    * @param type Event type
    * @param priority Event priority
-   * @returns Promise and cleanup function
+   * @returns Abortable promise
    */
   wait<K extends keyof T>(
     type: K, priority: EventPriority = "normal"
-  ): [Promise<T[K]>, () => void] {
-    let clean: () => void
-
-    const promise = new Promise<T[K]>((ok, err) => {
-      const off = this.once([type, priority], ok)
-      clean = () => { off(); err(new Cancelled()) }
-    })
-
-    return [promise, () => clean()];
+  ) {
+    return Abortable.create<T[K]>((ok) =>
+      this.on([type, priority], ok))
   }
 
   /**
-   * Promise that rejects (with the result) when the given event type is emitted,
-   * or rejects with a Cancelled when the cleanup function is called
+   * Promise that rejects (with the result) when the given event type is emitted
    * @param type Event type
    * @param priority Event priority
-   * @returns Promise and cleanup function
+   * @returns Abortable promise
    */
   error<K extends keyof T>(
     type: K, priority: EventPriority = "normal"
-  ): [Promise<never>, () => void] {
-    let clean: () => void
-
-    const promise = new Promise<never>((ok, err) => {
-      const off = this.once([type, priority], err)
-      clean = () => { off(); err(new Cancelled()) }
-    })
-
-    return [promise, () => clean()];
+  ) {
+    return Abortable.create<never>((ok, err) =>
+      this.on([type, priority], err))
   }
 
   /**

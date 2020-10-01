@@ -1,9 +1,10 @@
-import { EventEmitter } from "../mutevents.ts";
+import { EventEmitter } from "../mod.ts";
+import { Timeout } from "https://deno.land/x/timeout/mod.ts"
 
 class Bingo extends EventEmitter<{
-  1: undefined
-  2: undefined
-  3: undefined
+  1: void
+  2: void
+  3: void
 }> { }
 
 const bingo = new Bingo()
@@ -15,33 +16,30 @@ async function emit() {
 
   while (true) {
     // Wait one second between each emit
-    await new Promise(ok => setTimeout(ok, 1000))
-
+    await Timeout.wait(1000)
     // Emit a random number
     const random = [1, 2, 3][~~(Math.random() * 3)]
-    await bingo.emit(random as 1 | 2 | 3, undefined)
+    bingo.emit(random as 1 | 2 | 3, undefined)
+    console.log("Emitted", random)
   }
 }
 
-// Say "Bingo! 1" when the number 1 is emitted
+// Say "Bingo!" when the number 1 is emitted
 async function one() {
-  const [one] = bingo.wait(1)
-  await one
-  console.log("Bingo!", 1)
+  await bingo.wait(1)
+  console.log("Bingo! Got", 1)
 }
 
-// Say "Bingo! 2" when the number 2 is emitted
+// Say "Bingo!" when the number 2 is emitted
 async function two() {
-  const [two] = bingo.wait(2)
-  await two
-  console.log("Bingo!", 2)
+  await bingo.wait(2)
+  console.log("Bingo! Got", 2)
 }
 
-// Say "Bingo! 3" when the number 3 is emitted
+// Say "Bingo!" when the number 3 is emitted
 async function three() {
-  const [three] = bingo.wait(3)
-  await three
-  console.log("Bingo!", 3)
+  await bingo.wait(3)
+  console.log("Bingo! Got", 3)
 }
 
 emit()

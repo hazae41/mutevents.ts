@@ -1,4 +1,4 @@
-import { Cancelled, EventEmitter } from "../mutevents.ts";
+import { Cancelled, EventEmitter } from "../mod.ts";
 
 // This file tests inheritance and cancellation
 
@@ -13,24 +13,38 @@ class Animal<E extends AnimalEvents = AnimalEvents> extends EventEmitter<E> {
 }
 
 interface DogEvents extends AnimalEvents {
-  woof: { msg: string }
+  woof: string
 }
 
-class Dog extends Animal<DogEvents> { }
+class Dog extends Animal<DogEvents> {
+  async woof(text: string) {
+    return await this.emit("woof", text)
+  }
+}
 
 interface DuckEvents extends AnimalEvents {
-  quack: { msg: string }
+  quack: string
 }
 
-class Duck extends Animal<DuckEvents> { }
+class Duck extends Animal<DuckEvents> {
+  async quack(text: string) {
+    return await this.emit("quack", text)
+  }
+}
 
 interface CatEvents extends AnimalEvents {
-  meow: { msg: string }
+  meow: string
 }
 
-class Cat extends Animal<CatEvents> { }
+class Cat extends Animal<CatEvents> {
+  async meow(text: string) {
+    return await this.emit("meow", text)
+  }
+}
 
-class Lizard extends Animal { }
+class Lizard extends Animal {
+  // Nothing more
+}
 
 export async function test() {
   const dog = new Dog();
@@ -49,32 +63,17 @@ export async function test() {
   // Should only autocomplete to "death"
   // slizard.emit("")
 
-  // After-observer
-  dog.on(["woof", "after"], (e) => {
-    console.log("After:", e.msg)
+  // Comment this listener and see what happens
+  dog.on(["woof", "before"], () => {
+    throw new Cancelled("Muzzled")
   })
 
-  // Modifier
-  dog.on(["woof"], (e) => {
-    e.msg = "Waf!"
+  dog.on(["woof", "after"], (text) => {
+    console.log("Dog:", text)
   })
 
-  // Canceller
-  dog.on(["woof"], (e) => {
-    if (e.msg === "Waf!")
-      throw new Cancelled("Cancelled!")
-  })
-
-  // Before-observer
-  dog.on(["woof", "before"], (e) => {
-    console.log("Before:", e.msg)
-  })
-
-  const e = { msg: "Woof!" }
-  const cancelled = await dog.emit("woof", e);
+  const cancelled = await dog.woof("Woof!")
   if (cancelled) console.log(cancelled)
-
-  console.log("Result:", e.msg);
 }
 
 test();
