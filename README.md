@@ -159,6 +159,11 @@ See `test/connection.ts` and `test/bingo.ts`
 
 You can wait for an event and resolve/reject when it happens.
 
+```typescript
+await emitter.wait("event") // Will resolve when "event" is emitted
+await emitter.error("event") // Will reject when "event" is emitted
+```
+
 Such promises are abortables, so you can race them and abort them when done.
 
 ```typescript
@@ -174,3 +179,16 @@ async read() {
 
 You can also race them with a timeout from https://deno.land/x/timeout
 
+Since Timeout uses Abortable, all listeners are removed when the delay is exceeded
+
+```typescript
+// @test/connection.ts
+// Wait for a message until the connection is closed OR the delay is exceeded
+// Removing both listeners and clearing the timeout when one of them fullfills
+// Throws TimeoutError if the delay is exceeded
+async request() {
+  const response = this.wait("message")
+  const close = this.error("close")
+  return await Timeout.race([response, close], 1000)
+}
+```
