@@ -1,4 +1,4 @@
-import { Abort, Abortable } from "https://deno.land/x/abortable/mod.ts"
+import { Abortable } from "https://deno.land/x/abortable/mod.ts"
 
 export type EventPriority =
   "before" | "normal" | "after";
@@ -69,28 +69,32 @@ export class EventEmitter<T> {
 
   /**
    * Abortable promise that resolves (with the result) when the given event type is emitted
-   * @param type Event type
-   * @param priority Event priority
+   * @param [type, priority] Event type and priority
+   * @param filter Only resolve if it returns true
    * @returns Abortable promise
    */
   wait<K extends keyof T>(
-    type: K, priority: EventPriority = "normal"
+    [type, priority = "normal"]: [K, EventPriority?],
+    filter?: (data: T[K]) => boolean
   ) {
     return Abortable.create<T[K]>((ok) =>
-      this.on([type, priority], ok))
+      this.on([type, priority],
+        d => (!filter || filter?.(d)) && ok(d)))
   }
 
   /**
    * Promise that rejects (with the result) when the given event type is emitted
-   * @param type Event type
-   * @param priority Event priority
+   * @param [type, priority] Event type and priority
+   * @param filter Only reject if it returns true
    * @returns Abortable promise
    */
   error<K extends keyof T>(
-    type: K, priority: EventPriority = "normal"
+    [type, priority = "normal"]: [K, EventPriority?],
+    filter?: (data: T[K]) => boolean
   ) {
-    return Abortable.create<never>((ok, err) =>
-      this.on([type, priority], err))
+    return Abortable.create<never>((_, err) =>
+      this.on([type, priority],
+        d => (!filter || filter?.(d)) && err(d)))
   }
 
   /**
@@ -133,5 +137,25 @@ export class EventEmitter<T> {
         return e
       throw e
     }
+  }
+
+  /**
+   * Shortcut for creating an event listener
+   * that reemits the data on the given event type
+   * @param type Event type you want to reemit to
+   * @example sub.on(["close"], this.reemit("close"))
+   */
+  reemit<K extends keyof T>(type: K) {
+    return (data: T[K]) => this.emit(type, data)
+  }
+
+  /**
+   * Shortcut for creating an event listener that
+   * synchronously reemits the data on the given event type
+   * @param type Event type you want to reemit to
+   * @example this.on(["close"], this.reemitSync("close"))
+   */
+  reemitSync<K extends keyof T>(type: K) {
+    return (data: T[K]) => this.emitSync(type, data)
   }
 }

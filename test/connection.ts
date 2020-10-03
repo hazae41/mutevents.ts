@@ -18,8 +18,8 @@ class Connection extends EventEmitter<{
   // Wait for a message until the connection is closed
   // Removing both listeners when one of them fullfills
   async read() {
-    const message = this.wait("message")
-    const close = this.error("close")
+    const message = this.wait(["message"])
+    const close = this.error(["close"])
     return await Abort.race([message, close])
   }
 
@@ -33,8 +33,8 @@ class Connection extends EventEmitter<{
   // Send and wait for a message until the connection is closed OR the delay is exceeded
   // Removing both listeners and clearing the timeout when one of them fullfills
   async request(request: string) {
-    const response = this.wait("message")
-    const close = this.error("close")
+    const response = this.wait(["message"])
+    const close = this.error(["close"])
 
     this.write(request)
 
