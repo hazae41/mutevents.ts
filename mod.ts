@@ -7,7 +7,7 @@ export type EventListener<V> =
   (x: V) => unknown | Promise<unknown>
 
 export type EventListeners<T> = {
-  [K in keyof T]?: EventListener<T[K]>[]
+  [K in keyof T]?: (EventListener<T[K]> | undefined)[]
 }
 
 export class Cancelled {
@@ -110,7 +110,7 @@ export class EventEmitter<T> {
         ...this.listenersOf(type, "before"),
         ...this.listenersOf(type, "normal"),
         ...this.listenersOf(type, "after")
-      ]) await listener(data)
+      ]) await listener?.(data)
     } catch (e: unknown) {
       if (e instanceof Cancelled)
         return e
@@ -131,7 +131,7 @@ export class EventEmitter<T> {
         ...this.listenersOf(type, "before"),
         ...this.listenersOf(type, "normal"),
         ...this.listenersOf(type, "after")
-      ]) listener(data)
+      ]) listener?.(data)
     } catch (e: unknown) {
       if (e instanceof Cancelled)
         return e
