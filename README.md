@@ -37,16 +37,22 @@ emitter.emit(event, data): Promise<Cancelled | undefined>
 emitter.emitSync(event, data): Cancelled | undefined
 
 // Add a listener on the given event and priority, returns a removal function
-emitter.on([event, priority], listener: EventListener): () => void
+emitter.on([event, priority], listener: EventListener)): () => void
 
 // Add a listener that removes itself when executed, returns a removal function
 emitter.once([event, priority], listener: EventListener): () => void
 
 // Abortable promise that resolves (with the result) when the given event type is emitted
-emitter.wait(event, priority): Abortable (Promise)
+emitter.wait([event, priority], filter: (data) => boolean): Abortable (Promise)
 
 // Abortable promise that rejects (with the result) when the given event type is emitted
-emitter.error(event, priority): Abortable (Promise)
+emitter.error([event, priority], filter: (data) => boolean): Abortable (Promise)
+
+// Shortcut for creating an event listener that reemits the data on the given event type
+emitter.reemit(event): EventListener
+
+// Shortcut for creating an event listener that synchronously reemits the data on the given event type
+emitter.reemitSync(event): EventListener
 ```
 
 ## Types
@@ -57,7 +63,7 @@ We define a generic type Animal with a "death" event type
 
 ```typescript
 interface AnimalEvents {
-  death: void // Argument type (none)
+  death: void // No arguments passed
 }
 ```
 
