@@ -139,7 +139,7 @@ const offspawn = player.on(["spawn"],
 const offdeath = player.on(["death"], 
   ([x, y, z]) => console.log("Death:", x, y, z))
 
-player.once(["death"], offspawn, offdeath)
+player.once(["quit"], offspawn, offdeath)
 ```
 
 ## Priorities
