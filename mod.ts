@@ -38,32 +38,39 @@ export class EventEmitter<T> {
   }
 
   /**
-   * Execute the given listener each time the given event type is emitted
+   * Execute the given listeners each time the given event type is emitted
    * @param [type, priority] Event type and priority
-   * @param listener Listener
+   * @param listeners Listeners
    * @returns Cleanup function
    */
   on<K extends keyof T>(
     [type, priority = "normal"]: [K, EventPriority?],
-    listener: EventListener<T[K]>
+    ...listeners: EventListener<T[K]>[]
   ) {
-    const i = this.listenersOf(type, priority).push(listener)
-    return () => delete this.listenersOf(type, priority)[i]
+    const _listeners = this.listenersOf(type, priority)
+
+    const indexes = new Array<number>()
+    for (const listener of listeners)
+      indexes.push(_listeners.push(listener))
+
+    return () => {
+      for (const i of indexes) delete _listeners[i]
+    }
   }
 
   /**
-   * Execute the given listener once the given event type is emitted
+   * Execute the given listeners once the given event type is emitted
    * (self-cancelling event listener)
    * @param [type, priority] Event type and priority
-   * @param listener Listener
+   * @param listeners Listeners
    * @returns Cleanup function
    */
   once<K extends keyof T>(
     [type, priority = "normal"]: [K, EventPriority?],
-    listener: EventListener<T[K]>
+    ...listeners: EventListener<T[K]>[]
   ) {
     const off = this.on([type, priority],
-      (e) => { off(); listener(e) })
+      () => { off() }, ...listeners)
     return off
   }
 

@@ -37,10 +37,10 @@ emitter.emit(event, data): Promise<Cancelled | undefined>
 emitter.emitSync(event, data): Cancelled | undefined
 
 // Add a listener on the given event and priority, returns a removal function
-emitter.on([event, priority], listener: EventListener)): () => void
+emitter.on([event, priority], ...listeners: EventListener[]): () => void
 
 // Add a listener that removes itself when executed, returns a removal function
-emitter.once([event, priority], listener: EventListener): () => void
+emitter.once([event, priority], ...listeners: EventListener[]): () => void
 
 // Abortable promise that resolves (with the result) when the given event type is emitted
 emitter.wait([event, priority], filter: (data) => boolean): Abortable (Promise)
@@ -101,6 +101,46 @@ class Dog extends Animal<DogEvents> {
 ```
 
 Dog can now emit two event types: "woof" and "death"
+
+## Cleaning up
+
+In order to avoid memory leaks, you must clean up your garbage!
+
+You can achieve this by running the removal functions.
+
+One method to do so is to call them all once a certain event happens (usually a "close", "quit", "finish" event that happens once)
+
+```typescript
+class Connection extends EventEmitter<{
+  message: string
+  close: undefined
+}> {}
+
+const offmessage = connection.on(["message"],
+  (text) => console.log(text))
+
+connection.once(["close"], offmessage)
+```
+
+You can also call multiple removal functions at once
+
+```typescript
+type Location = [number, number, number]
+
+class Player extends EventEmitter<{
+  spawn: Location
+  death: Location 
+  quit: Location
+}> {}
+
+const offspawn = player.on(["spawn"],
+  ([x, y, z]) => console.log("Spawn:", x, y, z))
+
+const offdeath = player.on(["death"], 
+  ([x, y, z]) => console.log("Death:", x, y, z))
+
+player.once(["death"], offspawn, offdeath)
+```
 
 ## Priorities
 
