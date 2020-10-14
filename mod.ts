@@ -50,11 +50,14 @@ export class EventEmitter<T> {
     const _listeners = this.listenersOf(type, priority)
 
     const indexes = new Array<number>()
-    for (const listener of listeners)
-      indexes.push(_listeners.push(listener))
+    for (const listener of listeners) {
+      const length = _listeners.push(listener)
+      indexes.push(length - 1)
+    }
 
     return () => {
-      for (const i of indexes) delete _listeners[i]
+      for (const i of indexes)
+        delete _listeners[i]
     }
   }
 
