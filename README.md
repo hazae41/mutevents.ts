@@ -159,8 +159,6 @@ dog.on(["woof", "after"], () => console.log("Last"));
 dog.on(["woof", "before"], () => console.log("First"));
 ```
 
-The "low" listener will be executed after the "normal" one, which will be executed after the "high" one.
-
 When multiple listeners are on the same priority, the first defined will be the first executed.
 
 ```typescript
@@ -210,7 +208,7 @@ await emitter.wait("event") // Will resolve when "event" is emitted
 await emitter.error("event") // Will reject when "event" is emitted
 ```
 
-Such promises are abortables, so you can race them and abort them when done.
+Such promises are [abortables](https://deno.land/x/abortable), so you can race them and abort them when done.
 
 ```typescript
 // @test/connection.ts

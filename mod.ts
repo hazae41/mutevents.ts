@@ -51,8 +51,8 @@ export class EventEmitter<T> {
 
     const indexes = new Array<number>()
     for (const listener of listeners) {
-      const length = _listeners.push(listener)
-      indexes.push(length - 1)
+      const i = _listeners.push(listener) - 1
+      indexes.push(i)
     }
 
     return () => {
@@ -84,12 +84,10 @@ export class EventEmitter<T> {
    * @returns Abortable promise
    */
   wait<K extends keyof T>(
-    [type, priority = "normal"]: [K, EventPriority?],
-    filter?: (data: T[K]) => boolean
+    [type, priority = "normal"]: [K, EventPriority?]
   ) {
     return Abortable.create<T[K]>((ok) =>
-      this.on([type, priority],
-        d => (!filter || filter?.(d)) && ok(d)))
+      this.on([type, priority], ok))
   }
 
   /**
@@ -99,12 +97,10 @@ export class EventEmitter<T> {
    * @returns Abortable promise
    */
   error<K extends keyof T>(
-    [type, priority = "normal"]: [K, EventPriority?],
-    filter?: (data: T[K]) => boolean
+    [type, priority = "normal"]: [K, EventPriority?]
   ) {
     return Abortable.create<never>((_, err) =>
-      this.on([type, priority],
-        d => (!filter || filter?.(d)) && err(d)))
+      this.on([type, priority], err))
   }
 
   /**
