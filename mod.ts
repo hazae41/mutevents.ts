@@ -1,4 +1,4 @@
-import { Abortable } from "https://deno.land/x/abortable/mod.ts"
+import { Abortable } from "./deps/abortable.ts"
 
 export type EventPriority =
   "before" | "normal" | "after";
@@ -32,7 +32,7 @@ export class EventEmitter<T> {
   listenersOf<K extends keyof T>(
     type: K, priority: EventPriority = "normal"
   ) {
-    let listeners = this.listeners[priority][type]
+    const listeners = this.listeners[priority][type]
     if (!listeners) this.listeners[priority][type] = []
     return this.listeners[priority][type]!;
   }
