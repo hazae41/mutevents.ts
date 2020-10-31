@@ -11,7 +11,12 @@ export type EventListeners<T> = {
 }
 
 export class Cancelled {
+  readonly type = "cancelled"
   constructor(readonly reason?: string) { }
+}
+
+export function isCancelled(e: unknown): e is Cancelled {
+  return (e as Cancelled).type === "cancelled"
 }
 
 export class EventEmitter<T> {
@@ -118,7 +123,7 @@ export class EventEmitter<T> {
         ...this.listenersOf(type, "after")
       ]) await listener?.(data)
     } catch (e: unknown) {
-      if (e instanceof Cancelled)
+      if (isCancelled(e))
         return e
       throw e
     }
@@ -139,7 +144,7 @@ export class EventEmitter<T> {
         ...this.listenersOf(type, "after")
       ]) listener?.(data)
     } catch (e: unknown) {
-      if (e instanceof Cancelled)
+      if (isCancelled(e))
         return e
       throw e
     }
