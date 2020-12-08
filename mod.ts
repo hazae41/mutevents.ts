@@ -1,4 +1,4 @@
-import { Abortable } from "./deps/abortable.ts"
+import { Abort } from "./deps/abortable.ts"
 
 export type EventPriority =
   "before" | "normal" | "after";
@@ -91,7 +91,7 @@ export class EventEmitter<T> {
   wait<K extends keyof T>(
     [type, priority = "normal"]: [K, EventPriority?]
   ) {
-    return Abortable.create<T[K]>((ok) =>
+    return Abort.create<T[K]>((ok) =>
       this.on([type, priority], ok))
   }
 
@@ -104,7 +104,7 @@ export class EventEmitter<T> {
   error<K extends keyof T>(
     [type, priority = "normal"]: [K, EventPriority?]
   ) {
-    return Abortable.create<never>((_, err) =>
+    return Abort.create<never>((_, err) =>
       this.on([type, priority], err))
   }
 

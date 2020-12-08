@@ -1,5 +1,5 @@
 import { EventEmitter } from "../mod.ts";
-import { Timeout } from "https://deno.land/x/timeout/mod.ts"
+import { Timeout } from "https://deno.land/x/timeout@2.4/mod.ts"
 
 class Bingo extends EventEmitter<{
   1: void
@@ -26,19 +26,19 @@ async function emit() {
 
 // Say "Bingo!" when the number 1 is emitted
 async function one() {
-  await bingo.wait(1)
+  await bingo.wait([1])
   console.log("Bingo! Got", 1)
 }
 
 // Say "Bingo!" when the number 2 is emitted
 async function two() {
-  await bingo.wait(2)
+  await bingo.wait([2])
   console.log("Bingo! Got", 2)
 }
 
 // Say "Bingo!" when the number 3 is emitted
 async function three() {
-  await bingo.wait(3)
+  await bingo.wait([3])
   console.log("Bingo! Got", 3)
 }
 

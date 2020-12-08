@@ -1,7 +1,8 @@
 import { EventEmitter } from "../mod.ts";
 
-import { Abort } from "https://deno.land/x/abortable/mod.ts"
-import { Timeout } from "https://deno.land/x/timeout/mod.ts"
+import { Abort } from "../deps/abortable.ts"
+
+import { Timeout } from "https://deno.land/x/timeout@2.4/mod.ts"
 
 class Connection extends EventEmitter<{
   message: string

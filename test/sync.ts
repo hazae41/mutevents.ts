@@ -1,5 +1,6 @@
 import { Cancelled, EventEmitter } from "../mod.ts";
-import { Timeout } from "https://deno.land/x/timeout/mod.ts"
+
+import { Timeout } from "https://deno.land/x/timeout@2.4/mod.ts"
 
 class Sync extends EventEmitter<{
   test: { value: string }
