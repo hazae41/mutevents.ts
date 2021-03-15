@@ -3,20 +3,27 @@ import { Abort } from "./deps/abortable.ts"
 export type EventPriority =
   "before" | "normal" | "after";
 
-export type EventListener<V> =
-  (x: V) => unknown | Promise<unknown>
+export type EventListener<T, K extends keyof T> =
+  (x: T[K]) => T[K] | void | Promise<T[K] | void>
 
 export type EventListeners<T> = {
-  [K in keyof T]?: (EventListener<T[K]> | undefined)[]
+  [K in keyof T]?: (EventListener<T, K> | undefined)[]
 }
+
+export type EventResult<T, K extends keyof T> =
+  [data: T[K], cancelled?: Cancelled]
 
 export class Cancelled {
   readonly type = "cancelled"
   constructor(readonly reason?: string) { }
 }
 
-export function isCancelled(e: unknown): e is Cancelled {
-  return (e as Cancelled).type === "cancelled"
+export function isCancelled(x: unknown): x is Cancelled {
+  return (x as Cancelled).type === "cancelled"
+}
+
+export function isPromise(x: unknown): x is Promise<unknown> {
+  return x instanceof Promise
 }
 
 export class EventEmitter<T> {
@@ -34,7 +41,7 @@ export class EventEmitter<T> {
    * @param priority Event priority
    * @returns Listeners of the given event type and priority
    */
-  listenersOf<K extends keyof T>(
+  private listenersOf<K extends keyof T>(
     type: K, priority: EventPriority = "normal"
   ) {
     const listeners = this.listeners[priority][type]
@@ -50,7 +57,7 @@ export class EventEmitter<T> {
    */
   on<K extends keyof T>(
     [type, priority = "normal"]: [K, EventPriority?],
-    ...listeners: EventListener<T[K]>[]
+    ...listeners: EventListener<T, K>[]
   ) {
     const _listeners = this.listenersOf(type, priority)
 
@@ -75,7 +82,7 @@ export class EventEmitter<T> {
    */
   once<K extends keyof T>(
     [type, priority = "normal"]: [K, EventPriority?],
-    ...listeners: EventListener<T[K]>[]
+    ...listeners: EventListener<T, K>[]
   ) {
     const off = this.on([type, priority],
       () => { off() }, ...listeners)
@@ -108,44 +115,61 @@ export class EventEmitter<T> {
       this.on([type, priority], err))
   }
 
+  private async execute<T, K extends keyof T>(data: T[K], listener?: EventListener<T, K>) {
+    const result = await listener?.(data)
+    if (result !== undefined) return result
+  }
+
   /**
    * Asynchronously emits the given data on the given event type
    * @param type Event type
    * @param data Event data
-   * @returns Cancelled if any listener threw Cancelled; nothing else
+   * @returns Event result with modified (or not) data, and a cancelled object if cancelled
    * @throws An unknown if any listener threw something (except Cancelled); nothing else
    */
-  async emit<K extends keyof T>(type: K, data: T[K]): Promise<Cancelled | undefined> {
+  async emit<K extends keyof T>(type: K, data: T[K]): Promise<EventResult<T, K>> {
     try {
-      for (const listener of [
-        ...this.listenersOf(type, "before"),
-        ...this.listenersOf(type, "normal"),
-        ...this.listenersOf(type, "after")
-      ]) await listener?.(data)
+      for (const listener of this.listenersOf(type, "before"))
+        data = await this.execute(data, listener) ?? data
+      for (const listener of this.listenersOf(type, "normal"))
+        data = await this.execute(data, listener) ?? data
+      for (const listener of this.listenersOf(type, "after"))
+        data = await this.execute(data, listener) ?? data
+      return [data]
     } catch (e: unknown) {
       if (isCancelled(e))
-        return e
+        return [data, e]
       throw e
     }
+  }
+
+  private executeSync<T, K extends keyof T>(data: T[K], listener?: EventListener<T, K>) {
+    const result = listener?.(data)
+    if (result === undefined) return
+    if (isPromise(result))
+      throw new Error("Async listener on sync event")
+    return result
   }
 
   /**
    * Synchronously emits the given data on the given event type
    * @param type Event type
    * @param data Event data
-   * @returns Cancelled if any listener (synchronously) threw Cancelled; nothing else
+   * @returns Event result with modified (or not) data, and a cancelled object if cancelled
    * @throws An unknown if any listener (synchronously) threw something (except Cancelled); nothing else
    */
-  emitSync<K extends keyof T>(type: K, data: T[K]) {
+  emitSync<K extends keyof T>(type: K, data: T[K]): EventResult<T, K> {
     try {
-      for (const listener of [
-        ...this.listenersOf(type, "before"),
-        ...this.listenersOf(type, "normal"),
-        ...this.listenersOf(type, "after")
-      ]) listener?.(data)
+      for (const listener of this.listenersOf(type, "before"))
+        data = this.executeSync(data, listener) ?? data
+      for (const listener of this.listenersOf(type, "normal"))
+        data = this.executeSync(data, listener) ?? data
+      for (const listener of this.listenersOf(type, "after"))
+        data = this.executeSync(data, listener) ?? data
+      return [data]
     } catch (e: unknown) {
       if (isCancelled(e))
-        return e
+        return [data, e]
       throw e
     }
   }

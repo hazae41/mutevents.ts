@@ -23,18 +23,27 @@ const animal = new Animal()
 
 animal.on(["death"], (text) => console.log(text))
 
-const cancelled = await animal.die()
+const [msg, cancelled] = await animal.die()
 if(cancelled) console.error(cancelled)
 ```
 
 ## Syntax
 
 ```typescript
+type EventPriority =
+  "before" | "normal" | "after";
+
+type EventResult<T, K extends keyof T> =
+  [data: T[K], cancelled?: Cancelled]
+
+type EventListener<V> =
+  (x: V) => unknown | Promise<unknown>
+
 // Emit an event with the given args, returns a Cancelled object if cancelled
-emitter.emit(event, data): Promise<Cancelled | undefined>
+emitter.emit(event, data): Promise<EventResult>
 
 // Synchronously emit an event with the given args, returns a Cancelled object if (synchronously) cancelled
-emitter.emitSync(event, data): Cancelled | undefined
+emitter.emitSync(event, data): EventResult
 
 // Add a listener on the given event and priority, returns a removal function
 emitter.on([event, priority], ...listeners: EventListener[]): () => void
@@ -186,14 +195,14 @@ dog.on(["woof"], () => {
 You can check for cancellation on the emitter side
 
 ```typescript
-const cancelled = await dog.emit("woof");
+const [data, cancelled] = await dog.emit("woof");
 if (cancelled) console.error("cancelled")
 ```
 
 Or rethrow it
 
 ```typescript
-const cancelled = await dog.emit("woof");
+const [data, cancelled] = await dog.emit("woof");
 if (cancelled) throw cancelled;
 ```
 
