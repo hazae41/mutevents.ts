@@ -181,7 +181,7 @@ export class EventEmitter<T> {
    * @example sub.on(["close"], this.reemit("close"))
    */
   reemit<K extends keyof T>(type: K) {
-    return (data: T[K]) => this.emit(type, data)
+    return async (data: T[K]) => { await this.emit(type, data) }
   }
 
   /**
@@ -191,6 +191,6 @@ export class EventEmitter<T> {
    * @example this.on(["close"], this.reemitSync("close"))
    */
   reemitSync<K extends keyof T>(type: K) {
-    return (data: T[K]) => this.emitSync(type, data)
+    return (data: T[K]) => { this.emitSync(type, data) }
   }
 }

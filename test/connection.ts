@@ -49,7 +49,7 @@ async function emit() {
   // Change the order of the following lines
   await conn.onmessage("Hello!")
   await Timeout.wait(100 /*Change me*/)
-  await conn.onclose("Closed!")
+  await conn.onclose("Closed! (This is expected)")
 }
 
 async function receive() {

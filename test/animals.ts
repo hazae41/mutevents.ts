@@ -72,7 +72,7 @@ export async function test() {
     console.log("Dog:", text)
   })
 
-  const cancelled = await dog.woof("Woof!")
+  const [,cancelled] = await dog.woof("Woof!")
   if (cancelled) console.log(cancelled)
 }
 
